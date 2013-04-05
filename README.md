@@ -1,5 +1,5 @@
-hoap3_write
------------
+hoap3\_write
+============
 
 This package contains a set of scripts useful to generate joint-space trajectories that
 follow a SVG shape.
@@ -8,7 +8,7 @@ It requires MoveIt for the robot inverse kinematics, and softMotion for the SVG2
 conversion.
 
 Available tools
-+++++++++++++++
+---------------
 
 - `scripts/place_paper.py`: displays an interactive marker in RViz that is
   shaped as an A4 paper sheet. Used to visually place the SVG trajectory in
