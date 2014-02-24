@@ -40,8 +40,8 @@ import subprocess
 import rospy
 
 from visualization_msgs.msg import Marker
-from geometry_msgs.msg import Point, PoseStamped, Transform
-from moveit_msgs.msg import MultiDOFJointTrajectory, MultiDOFJointTrajectoryPoint
+from geometry_msgs.msg import Point, PoseStamped, Transform, Twist
+from trajectory_msgs.msg import MultiDOFJointTrajectory, MultiDOFJointTrajectoryPoint
 
 FRAME = "paper_sheet"
 
@@ -135,9 +135,10 @@ def make_joint_traj(points):
 
     for i, p in enumerate(points):
 
-        t = Transform(translation = p)
-
-        point = MultiDOFJointTrajectoryPoint([t], rospy.Time(i))
+        transforms = Transform(translation = p)
+        velocities = Twist()
+        accelerations = Twist() 
+        point = MultiDOFJointTrajectoryPoint([transforms], velocities, accelerations, rospy.Time(i))
         traj.points.append(point)
 
     return traj
