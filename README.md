@@ -4,8 +4,10 @@ hoap3\_write
 This package contains a set of scripts useful to generate joint-space trajectories that
 follow a SVG shape.
 
-It requires MoveIt for the robot inverse kinematics, and softMotion for the SVG2traj 
-conversion.
+It requires MoveIt for the robot inverse kinematics, and softMotion or 
+cowriter-trajectory-generator for the SVG2traj conversion. 
+
+The publish_traj script uses the ROS hydro format for joint trajectory publishing.
 
 Available tools
 ---------------

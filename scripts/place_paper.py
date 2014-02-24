@@ -5,6 +5,7 @@ import rospy
 
 import tf
 
+from visualization_msgs.msg import Marker, InteractiveMarkerControl
 br = tf.TransformBroadcaster()
 
 from interactive_markers.interactive_marker_server import *
