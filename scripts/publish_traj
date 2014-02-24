@@ -7,6 +7,9 @@ on the 'write_traj' topic.
 If started with a "--show" option, it also publishes the trajectory with markers
 on the visualization_markers topic.
 
+If started with a "--nowrite" option, the trajectory will be calculated but not published 
+on the 'write_traj' topic.
+
 Requires:
     - svg2traj (which itself relies on softMotion-libs) to compute the trajectory
     OR
@@ -148,6 +151,7 @@ if __name__ == "__main__":
     parser.add_argument('file', action="store",
                     help='a SVG file containing a single path')
     parser.add_argument('--show', action='store_true', help='publish the trajectory as markers on /visualization_markers')
+    parser.add_argument('--nowrite', action='store_true', help='publish the trajectory as MultiDOFJointTrajectory on /write_traj')
 
     args = parser.parse_args()
     raw_traj = list(get_traj(args.file))
@@ -157,7 +161,7 @@ if __name__ == "__main__":
             #logger.info("Publishing the trajectory visualization...")
             for i in range(2):
                 visualize_traj(raw_traj)
-        
-        traj = make_joint_traj(raw_traj)
-        pub_traj.publish(traj)
+        if not args.nowrite:
+            traj = make_joint_traj(raw_traj)
+            pub_traj.publish(traj)
         rate.sleep()
