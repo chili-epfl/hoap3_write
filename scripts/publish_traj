@@ -4,15 +4,21 @@
 Takes a SVG file containing a path as input, and publish the corresponding trajectory
 on the 'write_traj' topic.
 
-If started with a "--show" option, it also publishs the trajectory with markers
+If started with a "--show" option, it also publishes the trajectory with markers
 on the visualization_markers topic.
 
 Requires:
     - svg2traj (which itself relies on softMotion-libs) to compute the trajectory
+    OR
+    - svg_subsampler
 
 Trajectory coordinates are published in the 'paper_sheet' frame. You may want to first
 broadcast it.
 """
+#SVG_SAMPLER = "svg2traj"
+SVG_SAMPLER = "svg_subsampler"
+SAMPLE_DENSITY = 10 # points per cm
+PAPER_HEIGHT = 0.297 # metres (used for displaying svg_subsampler results)
 
 import logging
 logger = logging.getLogger("write." + __name__)
@@ -55,7 +61,7 @@ def a4_sheet():
     sheet.pose.orientation.w = 1.0
     sheet.pose.position.z = -.0005
     sheet.pose.position.x = w/2
-    sheet.pose.position.y = -h/2
+    sheet.pose.position.y = h/2
     sheet.id = 99
     sheet.type = Marker.CUBE
     sheet.scale.x = w
@@ -87,12 +93,17 @@ def visualize_traj(points):
     
     traj.points = list(points)
     
-    #pub_markers.publish(a4_sheet())
+    # use interactive marker from place_paper instead
+    #pub_markers.publish(a4_sheet()) 
     pub_markers.publish(traj)
 
 def get_traj(svgfile):
-    logger.info("Running svg2traj...")
-    p = subprocess.Popen(["svg2traj", svgfile], stdout=subprocess.PIPE, stderr = subprocess.PIPE)
+    logger.info("Running " + SVG_SAMPLER + "...")
+    if(SVG_SAMPLER=="svg2traj"):
+        p = subprocess.Popen([SVG_SAMPLER, svgfile], stdout=subprocess.PIPE, stderr = subprocess.PIPE)
+    elif(SVG_SAMPLER=="svg_subsampler"):    
+        p = subprocess.Popen([SVG_SAMPLER, svgfile, str(SAMPLE_DENSITY)], stdout=subprocess.PIPE, stderr =    subprocess.PIPE)
+    
     traj, errors = p.communicate()
     logger.info(errors)
 
@@ -101,10 +112,17 @@ def get_traj(svgfile):
     # first line of the output of svg2traj is the x,y origin of the path in meters,
     # relative to the SVG document origin
     x_orig, y_orig = [float(x) for x in traj[0].split()]
-
     for l in traj[1:]:
-            x, y, z = l.split()
-            yield Point(x_orig + float(x), y_orig + float(y), 0) # stange values on Z! better set it to 0
+        x, y, z = l.split()
+        if(SVG_SAMPLER=="svg2traj"):
+            x=x_orig + float(x);
+            y=y_orig + float(y);
+        elif(SVG_SAMPLER=="svg_subsampler"):
+            x=float(x);
+            y=PAPER_HEIGHT-float(y);
+
+        yield Point(x, y, 0) # stange values on Z! better set it to 0
+
 
 def make_joint_traj(points):
     traj = MultiDOFJointTrajectory()
@@ -132,17 +150,14 @@ if __name__ == "__main__":
     parser.add_argument('--show', action='store_true', help='publish the trajectory as markers on /visualization_markers')
 
     args = parser.parse_args()
-
     raw_traj = list(get_traj(args.file))
-
-    if args.show:
-        logger.info("Publishing the trajectory visualization...")
-        for i in range(2):
-            visualize_traj(raw_traj)
-            rospy.sleep(0.1) # let ROS some time to propagate the messages.
-
-    traj = make_joint_traj(raw_traj)
-    pub_traj.publish(traj)
-
-    rospy.sleep(1.0) # let ROS some time to propagate the messages.
-
+    rate = rospy.Rate(5.0) # continually publish since paper may be an interactive marker
+    while not rospy.is_shutdown():
+        if args.show:
+            #logger.info("Publishing the trajectory visualization...")
+            for i in range(2):
+                visualize_traj(raw_traj)
+        
+        traj = make_joint_traj(raw_traj)
+        pub_traj.publish(traj)
+        rate.sleep()
